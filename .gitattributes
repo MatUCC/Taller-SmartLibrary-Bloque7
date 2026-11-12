@@ -3,3 +3,4 @@ mvnw text eol=lf
 *.png binary
 *.vpp binary
 *.sh text eol=lf
+*.docx binary

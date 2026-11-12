@@ -8,6 +8,8 @@ Del modelo de clases orientado a objetos a un diseño por **tres capas** (Contro
 - Matías Castaño Raigoza
 - Juan David Acosta Urbano
 
+📄 **Informe completo en Word:** [`docs/entrega/Informe-Taller-SmartLibrary.docx`](docs/entrega/Informe-Taller-SmartLibrary.docx). Incluye todas las actividades, los cuatro diagramas, las tablas y las evidencias de pruebas.
+
 ## Contenido
 
 ```
@@ -25,6 +27,7 @@ Del modelo de clases orientado a objetos a un diseño por **tres capas** (Contro
 │   ├── visual-paradigm/SmartLibrary.vpp   proyecto de Visual Paradigm con los 4 diagramas
 │   ├── visual-paradigm/export/            PNG exportados por Visual Paradigm
 │   └── plantuml/                          versión alternativa en PlantUML
+├── docs/entrega/       informe del taller en Word (.docx)
 ├── docs/DISENO.md      Actividad 1, tabla de responsabilidades, relaciones, defensa y decisiones
 └── docs/evidencias/    salida de las pruebas automatizadas y de las pruebas de la API con curl
 ```

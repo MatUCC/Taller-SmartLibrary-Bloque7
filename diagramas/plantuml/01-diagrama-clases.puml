@@ -1,0 +1,157 @@
+@startuml 01-diagrama-clases
+!pragma layout smetana
+title SmartLibrary - Diagrama de clases por capas (Registrar préstamo)
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam linetype ortho
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #2F4A6D
+  HeaderBackgroundColor #DCE7F3
+}
+
+package "controller" {
+  class PrestamoController <<RestController>> {
+    - prestamoService : PrestamoService
+    + PrestamoController(prestamoService : PrestamoService)
+    + registrarPrestamo(request : PrestamoRequest) : ResponseEntity<PrestamoResponse>
+    + listarPrestamos() : ResponseEntity<List<PrestamoResponse>>
+  }
+}
+
+package "dto" {
+  class PrestamoRequest <<record>> {
+    + estudianteId : Long {NotNull, Positive}
+    + libroId : Long {NotNull, Positive}
+  }
+  class PrestamoResponse <<record>> {
+    + id : Long
+    + estudianteId : Long
+    + estudianteNombre : String
+    + libroId : Long
+    + libroTitulo : String
+    + fechaPrestamo : LocalDate
+    + fechaDevolucion : LocalDate [0..1]
+    + activo : boolean
+    + {static} desde(p : Prestamo) : PrestamoResponse
+  }
+}
+
+package "service" {
+  class PrestamoService <<Service>> {
+    - prestamoRepository : PrestamoRepository
+    - libroRepository : LibroRepository
+    - estudianteRepository : EstudianteRepository
+    - clock : Clock
+    + registrarPrestamo(request : PrestamoRequest) : PrestamoResponse {transactional}
+    + listarPrestamos() : List<PrestamoResponse>
+    - buscarEstudiante(id : Long) : Estudiante
+    - buscarLibro(id : Long) : Libro
+    - validarDisponibilidad(libro : Libro) : void
+  }
+}
+
+package "exception" {
+  class RecursoNoEncontradoException {
+    + RecursoNoEncontradoException(recurso : String, id : Long)
+  }
+  class LibroNoDisponibleException {
+    + LibroNoDisponibleException(libroId : Long)
+  }
+  class GlobalExceptionHandler <<RestControllerAdvice>> {
+    + manejarNoEncontrado(ex : RecursoNoEncontradoException) : ResponseEntity<ErrorResponse>
+    + manejarNoDisponible(ex : LibroNoDisponibleException) : ResponseEntity<ErrorResponse>
+    + manejarValidacion(ex : MethodArgumentNotValidException) : ResponseEntity<ErrorResponse>
+  }
+}
+
+package "repository" {
+  interface JpaRepository<T, ID> <<Spring Data>> {
+    + findById(id : ID) : Optional<T>
+    + save(entity : T) : T
+    + findAll() : List<T>
+    + count() : long
+  }
+  interface EstudianteRepository <<Repository>>
+  interface LibroRepository <<Repository>>
+  interface PrestamoRepository <<Repository>> {
+    + existsByLibroIdAndFechaDevolucionIsNull(libroId : Long) : boolean
+    + findAllConDetalle() : List<Prestamo>
+  }
+}
+
+package "model" {
+  class Estudiante <<Entity>> {
+    - id : Long
+    - nombre : String
+    - correo : String
+    + Estudiante(id : Long, nombre : String, correo : String)
+    + getId() : Long
+    + getNombre() : String
+    + getCorreo() : String
+  }
+  class Libro <<Entity>> {
+    - id : Long
+    - titulo : String
+    - disponible : boolean
+    + Libro(id : Long, titulo : String, disponible : boolean)
+    + isDisponible() : boolean
+    + marcarPrestado() : void
+    + marcarDevuelto() : void
+    + getId() : Long
+    + getTitulo() : String
+  }
+  class Prestamo <<Entity>> {
+    - id : Long
+    - fechaPrestamo : LocalDate
+    - fechaDevolucion : LocalDate [0..1]
+    + Prestamo(id : Long, fecha : LocalDate, estudiante : Estudiante, libro : Libro)
+    + estaActivo() : boolean
+    + getEstudiante() : Estudiante
+    + getLibro() : Libro
+  }
+}
+
+' ---------- Asociaciones del dominio (referencias persistentes) ----------
+Prestamo "0..*" --> "1" Estudiante : estudiante
+Prestamo "0..*" --> "1" Libro : libro
+
+' ---------- Asociaciones estructurales entre capas (atributo inyectado) ----------
+PrestamoController "1" --> "1" PrestamoService : prestamoService
+PrestamoService "1" --> "1" PrestamoRepository : prestamoRepository
+PrestamoService "1" --> "1" LibroRepository : libroRepository
+PrestamoService "1" --> "1" EstudianteRepository : estudianteRepository
+
+' ---------- Generalización entre interfaces ----------
+EstudianteRepository --|> JpaRepository : <<bind>> T=Estudiante, ID=Long
+LibroRepository --|> JpaRepository : <<bind>> T=Libro, ID=Long
+PrestamoRepository --|> JpaRepository : <<bind>> T=Prestamo, ID=Long
+
+' ---------- Dependencias (uso puntual, sin atributo) ----------
+PrestamoController ..> PrestamoRequest : <<use>>
+PrestamoController ..> PrestamoResponse : <<use>>
+PrestamoService ..> PrestamoRequest : <<use>>
+PrestamoService ..> PrestamoResponse : <<create>>
+PrestamoService ..> Prestamo : <<create>>
+PrestamoService ..> Libro : <<use>>
+PrestamoService ..> Estudiante : <<use>>
+PrestamoService ..> RecursoNoEncontradoException : <<throw>>
+PrestamoService ..> LibroNoDisponibleException : <<throw>>
+PrestamoResponse ..> Prestamo : <<use>>
+GlobalExceptionHandler ..> RecursoNoEncontradoException : <<handle>>
+GlobalExceptionHandler ..> LibroNoDisponibleException : <<handle>>
+
+note bottom of Libro
+  Experto en información (GRASP):
+  R1 y R3 - solo un libro disponible
+  se presta y deja de estar disponible.
+end note
+
+note top of PrestamoService
+  Controlador GRASP del caso de uso
+  "Registrar préstamo". La transacción
+  agrupa marcarPrestado() + save().
+end note
+@enduml

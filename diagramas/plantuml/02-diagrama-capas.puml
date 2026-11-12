@@ -1,0 +1,81 @@
+@startuml 02-diagrama-capas
+!pragma layout smetana
+allowmixing
+title SmartLibrary - Arquitectura en tres capas (Controller -> Service -> Repository)
+
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam package {
+  BorderColor #2F4A6D
+  FontStyle bold
+}
+hide empty members
+
+actor "Cliente HTTP" as Cliente
+
+package "Capa de Presentación (controller / dto)" as Presentacion <<Layer>> #E8F1FB {
+  class PrestamoController <<RestController>> {
+    POST /api/prestamos
+    GET /api/prestamos
+  }
+  class PrestamoRequest <<DTO>>
+  class PrestamoResponse <<DTO>>
+  class GlobalExceptionHandler <<RestControllerAdvice>> {
+    404 Not Found
+    409 Conflict
+    400 Bad Request
+  }
+}
+
+package "Capa de Negocio (service)" as Negocio <<Layer>> #EAF6EC {
+  class PrestamoService <<Service>> {
+    registrarPrestamo()
+    listarPrestamos()
+    reglas R1..R5
+    @Transactional
+  }
+  class LibroNoDisponibleException
+  class RecursoNoEncontradoException
+}
+
+package "Capa de Acceso a Datos (repository)" as Datos <<Layer>> #FFF4E0 {
+  interface PrestamoRepository <<Repository>>
+  interface LibroRepository <<Repository>>
+  interface EstudianteRepository <<Repository>>
+}
+
+package "Modelo del dominio (model) - transversal, no es capa de ejecución" as Dominio #F3EEF9 {
+  class Estudiante <<Entity>>
+  class Libro <<Entity>>
+  class Prestamo <<Entity>>
+}
+
+database "H2 (en memoria)" as H2 {
+}
+
+Cliente --> PrestamoController : JSON / HTTP
+PrestamoController ..> PrestamoService : <<use>>
+PrestamoService ..> PrestamoRepository : <<use>>
+PrestamoService ..> LibroRepository : <<use>>
+PrestamoService ..> EstudianteRepository : <<use>>
+PrestamoRepository ..> H2 : JPA / Hibernate
+LibroRepository ..> H2
+EstudianteRepository ..> H2
+
+Negocio ..> Dominio : <<use>>
+Datos ..> Dominio : <<use>>
+
+note right of Presentacion
+  Solo entrada/salida HTTP:
+  valida el DTO y devuelve el código.
+  No accede a repositorios.
+end note
+note right of Negocio
+  Coordina el caso de uso y
+  aplica las reglas de negocio.
+end note
+note right of Datos
+  Persistencia: Spring Data JPA
+  genera la implementación.
+end note
+@enduml

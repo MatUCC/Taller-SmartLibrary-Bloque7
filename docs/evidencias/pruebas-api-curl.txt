@@ -1,0 +1,81 @@
+Evidencia: pruebas manuales de la API con curl (app en ejecución con H2 y data.sql)
+Fecha: 2026-11-11
+
+==================================================================
+ESCENARIO: Préstamo de libro disponible (estudiante 1, libro 2)
+ESPERADO : 201 Created y préstamo registrado
+$ curl -X POST http://localhost:8089/api/prestamos -H Content-Type: application/json -d {"estudianteId":1,"libroId":2}
+
+HTTP/1.1 201 
+Location: /api/prestamos/3
+Content-Type: application/json
+
+{"id":3,"estudianteId":1,"estudianteNombre":"Ana Gómez","libroId":2,"libroTitulo":"Design Patterns","fechaPrestamo":"2026-11-11","fechaDevolucion":null,"activo":true}
+
+
+==================================================================
+ESCENARIO: Libro ya prestado (libro 3 tiene préstamo activo)
+ESPERADO : 409 Conflict; sin nuevo préstamo
+$ curl -X POST http://localhost:8089/api/prestamos -H Content-Type: application/json -d {"estudianteId":1,"libroId":3}
+
+HTTP/1.1 409 
+Content-Type: application/json
+
+{"status":409,"error":"Conflict","mensaje":"El libro con id 3 no está disponible","detalles":[],"timestamp":"2026-11-11T22:11:44.8138123"}
+
+
+==================================================================
+ESCENARIO: Libro recién prestado (libro 2 otra vez)
+ESPERADO : 409 Conflict (R3: ya no está disponible)
+$ curl -X POST http://localhost:8089/api/prestamos -H Content-Type: application/json -d {"estudianteId":3,"libroId":2}
+
+HTTP/1.1 409 
+Content-Type: application/json
+
+{"status":409,"error":"Conflict","mensaje":"El libro con id 2 no está disponible","detalles":[],"timestamp":"2026-11-11T22:11:44.9225064"}
+
+
+==================================================================
+ESCENARIO: Estudiante inexistente
+ESPERADO : 404 Not Found
+$ curl -X POST http://localhost:8089/api/prestamos -H Content-Type: application/json -d {"estudianteId":999,"libroId":1}
+
+HTTP/1.1 404 
+Content-Type: application/json
+
+{"status":404,"error":"Not Found","mensaje":"Estudiante con id 999 no existe","detalles":[],"timestamp":"2026-11-11T22:11:45.0369161"}
+
+
+==================================================================
+ESCENARIO: Libro inexistente
+ESPERADO : 404 Not Found
+$ curl -X POST http://localhost:8089/api/prestamos -H Content-Type: application/json -d {"estudianteId":1,"libroId":999}
+
+HTTP/1.1 404 
+Content-Type: application/json
+
+{"status":404,"error":"Not Found","mensaje":"Libro con id 999 no existe","detalles":[],"timestamp":"2026-11-11T22:11:45.1169933"}
+
+
+==================================================================
+ESCENARIO: Solicitud inválida (R4)
+ESPERADO : 400 Bad Request; sin préstamo
+$ curl -X POST http://localhost:8089/api/prestamos -H Content-Type: application/json -d {"estudianteId":null,"libroId":-1}
+
+HTTP/1.1 400 
+Content-Type: application/json
+
+{"status":400,"error":"Bad Request","mensaje":"Solicitud inválida","detalles":["estudianteId: estudianteId es obligatorio","libroId: libroId debe ser positivo"],"timestamp":"2026-11-11T22:11:45.2196227"}
+
+
+==================================================================
+ESCENARIO: Consulta de préstamos
+ESPERADO : 200 OK con registros (3: 2 iniciales + 1 creado; los 409/404/400 no crearon nada)
+$ curl http://localhost:8089/api/prestamos
+
+HTTP/1.1 200 
+Content-Type: application/json
+
+[{"id":1,"estudianteId":2,"estudianteNombre":"Luis Pérez","libroId":3,"libroTitulo":"Refactoring","fechaPrestamo":"2026-11-01","fechaDevolucion":null,"activo":true},{"id":2,"estudianteId":1,"estudianteNombre":"Ana Gómez","libroId":1,"libroTitulo":"Clean Code","fechaPrestamo":"2026-10-01","fechaDevolucion":"2026-10-15","activo":false},{"id":3,"estudianteId":1,"estudianteNombre":"Ana Gómez","libroId":2,"libroTitulo":"Design Patterns","fechaPrestamo":"2026-11-11","fechaDevolucion":null,"activo":true}]
+
+

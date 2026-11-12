@@ -1,0 +1,13 @@
+Evidencia: ejecución de pruebas automatizadas (./mvnw clean package)
+Fecha: 2026-11-11   Java: 21.0.13 (Eclipse Adoptium) - compilado con --release 21
+Clase: co.edu.ucc.smartlibrary.controller.PrestamoControllerIntegrationTest
+
+  [OK] libroYaPrestado                               1.726 s
+  [OK] libroInexistente                              0.013 s
+  [OK] solicitudInvalida                             0.020 s
+  [OK] consultaDePrestamos                           0.075 s
+  [OK] prestamoDeLibroDisponible                     0.112 s
+  [OK] estudianteInexistente                         0.013 s
+
+Tests run: 6, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
